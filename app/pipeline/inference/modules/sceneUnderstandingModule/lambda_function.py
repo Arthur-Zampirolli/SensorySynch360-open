@@ -61,7 +61,7 @@ class SeceneUnderstandingModule(BaseRecognitionModule):
                 ),
                 metadata=self.metadata
             )
-
+            print(f"DEBUG: Resposta completa do erro: {post_model_outputs_response.status}")
             if post_model_outputs_response.status.code != status_code_pb2.SUCCESS:
                 raise Exception("Post model outputs failed, status: " + post_model_outputs_response.status.description)
                 

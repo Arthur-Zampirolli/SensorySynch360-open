@@ -32,13 +32,13 @@ else:
     connection = pika.BlockingConnection(pika.ConnectionParameters(rabbitmq_host, rabbitmq_port))
 channel = connection.channel()
 channel.exchange_declare(exchange='modules', exchange_type='direct')
-channel.queue_declare(queue='register_module')
+channel.queue_declare(queue='register_module', durable=True)
 channel.queue_bind(exchange='modules', queue='register_module')
-channel.queue_declare(queue='unregister_module')
+channel.queue_declare(queue='unregister_module', durable=True)
 channel.queue_bind(exchange='modules', queue='unregister_module')
-channel.queue_declare(queue='modules_responses')
+channel.queue_declare(queue='modules_responses', durable=True)
 channel.queue_bind(exchange='modules', queue='modules_responses')
-channel.queue_declare(queue='crashed_modules')
+channel.queue_declare(queue='crashed_modules', durable=True)
 channel.queue_bind(exchange='modules', queue='crashed_modules')
 
 

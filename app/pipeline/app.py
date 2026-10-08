@@ -20,6 +20,7 @@ redis_host = config('REDIS_HOST', default='redis')
 redis_port = config('REDIS_PORT', default=6379, cast=int)
 redis_db = config('REDIS_DB', default=0, cast=int)
 redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
+endpoint_url = os.getenv('AWS_ENDPOINT', 'http://localstack:4566')
 
 def setup_rabbitmq_connection():
     rabbitmq_host = config('RABBITMQ_HOST', default='rabbitmq')
@@ -47,12 +48,14 @@ def setup_rabbitmq_connection():
 
 
 def upload_to_s3(media_data,selected_modules):
-    s3 = boto3.client('s3')
-    BUCKET_NAME = config('BUCKET_NAME', default='none')
+    s3 = boto3.client('s3', endpoint_url=endpoint_url)
+
+    BUCKET_NAME = config('BUCKET_NAME', default='media-storage-bucket')
     if(BUCKET_NAME == "none"):
         print("ENV BUCKET_NAME required")
         exit(1)
     medias_s3_urlList = {}
+    print(f"DEBUG: Tentando acessar o bucket: '{BUCKET_NAME}'") # Adicione isso na linha 61
     main_obj_name = str(hashlib.md5(media_data.encode()).hexdigest())
     for module in selected_modules:
         # If the object does not exist, upload it
@@ -129,12 +132,14 @@ def send_media(media_data,selected_modules):
             fire_and_forget(url, data=data, headers=headers)
         else: ## AWS
             # Queue to wake up the lambda
-            channel.queue_declare(queue=module['module_name'])
+            channel.queue_declare(queue=module['module_name'], durable=True)
+            
             channel.queue_bind(exchange='modules', queue=module['module_name'])
             wake_up_message = {
                     'b64_media_s3_url': medias_s3_urlList[module['media_input_type']],
                     'user_id': user_id
                 }
+            #print(f"Sending message to module {module['module_name']} with media URL: {medias_s3_urlList[module['media_input_type']]}")
             channel.basic_publish(exchange='modules',
                                 routing_key=module['module_name'], 
                                 properties = pika.BasicProperties(
@@ -203,10 +208,11 @@ def upload_video():
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
         response.headers.add('Access-Control-Allow-Methods', 'POST')
         return response
-        
+    
     print("starting Map")
+    #print(f"Request data: {request.data[:100]}...")  # Log the beginning of the request data for debugging
     data = json.loads(request.data, strict=False)
-
+    #print(f"Parsed JSON data: {data}")  # Log the parsed JSON data for debugging
     if data is None or data['video'] is None:
       print("No valid request body, video missing!")
       return jsonify({'error': 'No valid request body, json missing!'})  

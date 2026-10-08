@@ -8,6 +8,7 @@ services:
     build:
       context: ./
       dockerfile: ./editor/Dockerfile
+      network: host
     ports:
       - "80:80"
     volumes:
@@ -24,6 +25,7 @@ services:
     build:
       context: ./pipeline
       dockerfile: Dockerfile
+      network: host
     ports:
       - "8007:80"
     volumes:
@@ -44,6 +46,7 @@ services:
     build:
       context: ./pipeline/inference/modules
       dockerfile: ./awsLocalizationModule/Dockerfile
+      network: host
     volumes:
       - ./pipeline/inference/modules:/app
     depends_on:
@@ -67,6 +70,7 @@ services:
     build:
       context: ./pipeline/inference/modules
       dockerfile: ./fireLocalizationModule/Dockerfile
+      network: host
     volumes:
       - ./pipeline/inference/modules:/app
     depends_on:
@@ -79,17 +83,18 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           device_ids: ['0']
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
   scene-module:
     build:
       context: ./pipeline/inference/modules
       dockerfile: ./sceneUnderstandingModule/Dockerfile
+      network: host
     volumes:
       - ./pipeline/inference/modules:/app
     depends_on:
@@ -106,6 +111,7 @@ services:
     build:
       context: ./pipeline/inference/modules
       dockerfile: ./sunLocalizationModule/Dockerfile
+      network: host
     volumes:
       - ./pipeline/inference/modules:/app
     depends_on:
@@ -123,6 +129,7 @@ services:
     build:
       context: ./pipeline/rmq-consumer
       dockerfile: Dockerfile
+      network: host
     volumes:
       - ./pipeline/rmq-consumer:/app
     depends_on:
@@ -165,5 +172,6 @@ services:
     environment:
       - SERVICES=s3,iam,sts    # Liste os serviços que você precisa
       - DEBUG=1
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN} 
     networks:
       - my-network

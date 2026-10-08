@@ -10,7 +10,7 @@ import time
 from types import SimpleNamespace
 import base64
 import requests
-
+endpoint_url = os.getenv('AWS_ENDPOINT', 'http://localstack:4566')
 def print_keys(dic):
     for key, value in dic.items():
         print(key)
@@ -66,7 +66,7 @@ class BaseRecognitionModule:
         exit(0) 
     def register_module(self):
         if(config('DOCKER_ENV', default = 'False') == 'True'):
-            self.channel.queue_declare(queue=self.module_name)
+            self.channel.queue_declare(queue=self.module_name, durable=True)
             self.channel.queue_bind(exchange='modules', queue=self.module_name)
         
         self.channel.basic_publish(exchange='modules', routing_key='register_module', body=json.dumps(self.module_details))
@@ -93,7 +93,8 @@ class BaseRecognitionModule:
                             body=json.dumps(message))
         tmpconn.close()
     def download_from_s3(self, bucket_name, obj_name):
-        s3_client = boto3.client('s3')
+        #s3_client = boto3.client('s3')
+        s3_client = boto3.client('s3', endpoint_url=endpoint_url)
         try:
             s3_response_object = s3_client.get_object(Bucket=bucket_name, Key=obj_name)
             object_content = s3_response_object['Body'].read()
@@ -127,9 +128,10 @@ class BaseRecognitionModule:
                     print("ENV BUCKET_NAME required")
                     exit(1)
                 b64media = self.download_from_s3(BUCKET_NAME,request_data['b64_media_s3_url'])
+
             pre_processed_media = self.pre_process(json.loads(b64media))
             response = self.inference(pre_processed_media)
-            ##
+            
             print(f"Finished response")
             message = {
                 'response': response,
@@ -160,7 +162,7 @@ class BaseRecognitionModule:
             ch.basic_publish(exchange='modules',
                             routing_key='crashed_modules',
                             body=json.dumps(message))
-    def pre_process(self, mediaList): #TBI
+    def pre_process(self, mediaList): #TBIS
         pass 
     def inference(self, mediaList): #TBI
         pass
@@ -169,6 +171,7 @@ class BaseRecognitionModule:
     
     def start_consuming(self):
         try:
+            self.channel.queue_declare(queue=self.module_name, durable=True)
             print(f'[*] Waiting for messages for module {self.module_name}/{self.module_id}')
             last_log_time = time.time()
 

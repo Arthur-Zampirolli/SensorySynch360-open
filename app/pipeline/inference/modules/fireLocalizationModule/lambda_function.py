@@ -17,7 +17,8 @@ class FireLocalizationModule(BaseRecognitionModule):
         super().__init__(module_name, media_input_type, depends_on=[])
         ##Fire detection 
         self.fire_classes = open('./fireLocalizationModule/fire/fire.names').read().strip().split('\n')
-        self.fire_net = cv.dnn.readNetFromDarknet('./fireLocalizationModule/fire/yolov4-fire.cfg', './fireLocalizationModule/fire/yolov4-fire_best.weights')
+        #self.fire_net = cv.dnn.readNetFromDarknet('./fireLocalizationModule/fire/yolov4-fire.cfg', './fireLocalizationModule/fire/yolov4-fire_best.weights')
+        self.fire_net = cv.dnn.readNetFromDarknet('./fireLocalizationModule/fire/yolov4-fire.cfg', './fireLocalizationModule/fire/yolov4-fire_FINAL.weights')
         self.fire_ln = self.fire_net.getUnconnectedOutLayersNames()
     
     def pre_process(self, mediaList):
